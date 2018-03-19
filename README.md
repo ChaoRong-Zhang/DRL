@@ -16,8 +16,20 @@
   - REINFORCE
   
 - Actor Critic
-
-
+  - Actor Critic Basic
+  - A2C (Advantage-Actor-Critic)
+  - DDPG (Deep Deterministic Policy Gradient)
+  - TRPO (Trust Region Policy Optimization) 
+  [Trust Region Policy Optimization](https://arxiv.org/pdf/1502.05477.pdf)
+  - ACER (Actor-Critic with Experience Replay)
+  [Sample Efficient Actor-Critic with Experience Replay](https://arxiv.org/abs/1611.01224)
+  - ACKTR (Actor Critic using Kronecker-Factored Trust Region)
+  [Scalable trust-region method for deep reinforcement learning using Kronecker-factored approximation](https://arxiv.org/abs/1708.05144)
+  - A3C (Asynchronous Advantage Actor Critic)
+  - UNREAL (UNsupervised REinforcement and Auxiliary Learning)
+  - PPO (Proximal Policy Optimization)
+  - DPPO (Distributed Proximal Policy Optimization)
+  - ...
 
 
 
