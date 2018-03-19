@@ -26,6 +26,8 @@
   - ACKTR (Actor Critic using Kronecker-Factored Trust Region)
   [Scalable trust-region method for deep reinforcement learning using Kronecker-factored approximation](https://arxiv.org/abs/1708.05144)
   - A3C (Asynchronous Advantage Actor Critic)
+  - NFSP (Neural Fictitious Self-Play)
+  [Deep Reinforcement Learning from Self-Play in Imperfect-Information Games](https://arxiv.org/abs/1603.01121)
   - UNREAL (UNsupervised REinforcement and Auxiliary Learning)
   - PPO (Proximal Policy Optimization)
   - DPPO (Distributed Proximal Policy Optimization)
