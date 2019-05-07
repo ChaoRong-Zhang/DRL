@@ -1,8 +1,25 @@
 import numpy as np
+import os
+import logging
 
 
 class q_learning_model_based:
     def __init__(self, num_s, a_spc, r_spc, nxt_s_spc, s_start, s_end):
+        """
+        A class implement simple model-based Q learning method
+        Args:
+            num_s: number of states
+            a_spc: list of number of actions for each state.
+            r_spc: 2 dimentional list of rewards for each state index and action index.
+            nxt_s_spc: 3 dimentional list recording the probability to each state based
+                on current state index and action index.
+            s_state: index of state to s_start
+            s_end: index of state to stop
+        Returns:
+            The ID of the checkpoint from which the actor was resumed, or None
+            if the actor should restart from the beginning.
+        """
+
         self.num_s = num_s
         if len(a_spc)!=num_s:
             raise ValueError('Shape mismatch between state and action space')
@@ -30,7 +47,20 @@ class q_learning_model_based:
         self.learning_rate = 0.1
         self.epsilon = 0.1
 
+        log_path = os.path.abspath(__file__).split('/')[-1].split('.')[0]
+        logging.basicConfig(level=logging.DEBUG,
+                            handlers=[logging.FileHandler("{0}.log".format(log_path)),
+                                      logging.StreamHandler()])
+
     def get_nxt_state(self, ind_s, ind_a):
+        """
+        Get the next state index based on current state index and action index
+        Args:
+            ind_s: current state index
+            ind_a: current action index
+        Returns:
+            next state index
+        """
         prob_nxt_s = self.nxt_s_spc[ind_s][ind_a]
         rand_val = np.random.uniform(0, 1)
         acc_val = 0
@@ -40,6 +70,9 @@ class q_learning_model_based:
                 return i
 
     def inference(self):
+        """
+        Inference from the initial state to the end state based on the Q table
+        """
         for i in range(self.test_iter):
             cur_s = self.s_start
             cur_step = 0
@@ -53,19 +86,22 @@ class q_learning_model_based:
                 action = np.argmax(cur_q_vals)
                 nxt_s = self.get_nxt_state(cur_s, action)
                 cur_reward = self.r_spc[cur_s][action]
-                print(f'Step {cur_step}: from state {cur_s} to state {nxt_s}, with reward {cur_reward}')
+                logging.debug(f'Step {cur_step}: from state {cur_s} to state {nxt_s}, with reward {cur_reward}')
                 total_reward += cur_reward
                 cur_s = nxt_s
                 cur_step += 1
             if cur_step < self.max_steps:
-                print(f'Inference Trial {i}: Success! Total {cur_step} steps, {total_reward} rewards.')
+                logging.info(f'Inference Trial {i}: Success! Total {cur_step} steps, {total_reward} rewards.')
             else:
-                print(f'Inference Trial {i}: Failure! Final state is in state {cur_s}')
+                logging.info(f'Inference Trial {i}: Failure! Final state is in state {cur_s}')
 
     def run(self):
+        """
+        Run multiple trials from initial state to the end state. Learn the best strategy and update on Q table
+        """
         for i in range(self.run_iter):
             if i % 100 == 0:
-                print(f'Processing in iteration {i}')
+                logging.info(f'Processing in iteration {i}')
             cur_s = self.s_start
             cur_step = 0
             while cur_s != self.s_end and cur_step < self.max_steps:
