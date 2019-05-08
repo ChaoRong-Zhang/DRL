@@ -25,4 +25,5 @@ s_start = 0
 s_end = 5
 
 test_model = q_learning_model_based(num_s, a_spc, r_spc, nxt_s_spc, s_start, s_end)
-test_model.run()
+test_model.run(mode='q_learning')
+test_model.run(mode='sarsa')
