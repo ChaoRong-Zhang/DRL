@@ -15,16 +15,13 @@ class q_learning_model_based:
                 on current state index and action index.
             s_state: index of state to s_start
             s_end: index of state to stop
-        Returns:
-            The ID of the checkpoint from which the actor was resumed, or None
-            if the actor should restart from the beginning.
         """
 
         self.num_s = num_s
-        if len(a_spc)!=num_s:
+        if len(a_spc) != num_s:
             raise ValueError('Shape mismatch between state and action space')
         self.a_spc = a_spc
-        if num_s!=len(r_spc):
+        if num_s != len(r_spc):
             raise ValueError('Shape mismatch between state and reward space')
         for s in range(num_s):
             if a_spc[s] != len(r_spc[s]):
@@ -40,7 +37,7 @@ class q_learning_model_based:
         self.q_table = {}
 
         # properties
-        self.run_iter = 1000
+        self.run_iter = 10000
         self.test_iter = 10
         self.max_steps = 10000
         self.discount_factor = 0.9
@@ -95,39 +92,77 @@ class q_learning_model_based:
             else:
                 logging.info(f'Inference Trial {i}: Failure! Final state is in state {cur_s}')
 
-    def run(self):
+    def choose_action(self, state):
+        rand_val = np.random.uniform(0, 1)
+        if rand_val < self.epsilon:
+            action = np.random.choice(self.a_spc[state])
+        else:
+            logits = []
+            for a in range(self.a_spc[state]):
+                if tuple([state, a]) not in self.q_table:
+                    self.q_table[tuple([state, a])] = 0
+                logits.append(self.q_table[tuple([state, a])])
+            logits_exp = np.exp(logits)
+            probs = logits_exp / np.sum(logits_exp)
+            action = np.random.choice(self.a_spc[state], p=probs)
+        return action
+
+    def run(self, mode='q_learning'):
+        if mode == 'q_learning':
+            self.run_q_learning()
+        elif mode == 'sarsa':
+            self.run_sarsa()
+        else:
+            raise ValueError('The provided mode is not supported...')
+
+    def run_sarsa(self):
         """
-        Run multiple trials from initial state to the end state. Learn the best strategy and update on Q table
+        Follow on-policy q-learning method. Run multiple trials from initial state to the end state. Learn the best strategy and update on Q table
         """
         for i in range(self.run_iter):
-            if i % 100 == 0:
+            if i % 1000 == 0:
+                logging.info(f'Processing in iteration {i}')
+            cur_s = self.s_start
+            cur_step = 0
+            cur_a = self.choose_action(cur_s)
+            while cur_s != self.s_end and cur_step < self.max_steps:
+                nxt_s = self.get_nxt_state(cur_s, cur_a)
+                nxt_a = self.choose_action(nxt_s)
+                if tuple([nxt_s, nxt_a]) not in self.q_table:
+                    self.q_table[tuple([nxt_s, a])] = 0
+
+                cur_k = tuple([cur_s, cur_a])
+                if cur_k in self.q_table:
+                    self.q_table[cur_k] = (1 - self.learning_rate) * self.q_table[cur_k] + self.learning_rate * (self.r_spc[cur_s][cur_a] + self.discount_factor * self.q_table[tuple([nxt_s, nxt_a])])
+                else:
+                    self.q_table[cur_k] = self.learning_rate * (self.r_spc[cur_s][cur_a] + self.discount_factor * self.q_table[tuple([nxt_s, nxt_a])])
+                cur_a = nxt_a
+                cur_s = nxt_s
+                cur_step += 1
+        self.inference()
+
+    def run_q_learning(self):
+        """
+        Follow off-policy q-learning method. Run multiple trials from initial state to the end state. Learn the best strategy and update on Q table
+        """
+        for i in range(self.run_iter):
+            if i % 1000 == 0:
                 logging.info(f'Processing in iteration {i}')
             cur_s = self.s_start
             cur_step = 0
             while cur_s != self.s_end and cur_step < self.max_steps:
-                rand_val = np.random.uniform(0, 1)
-                if rand_val < self.epsilon:
-                    action = np.random.choice(self.a_spc[cur_s])
-                else:
-                    logits = []
-                    for a in range(self.a_spc[cur_s]):
-                        if tuple([cur_s, a]) not in self.q_table:
-                            self.q_table[tuple([cur_s, a])] = 0
-                        logits.append(self.q_table[tuple([cur_s, a])])
-                    logits_exp = np.exp(logits)
-                    probs = logits_exp / np.sum(logits_exp)
-                    action = np.random.choice(self.a_spc[cur_s], p=probs)
-                nxt_s = self.get_nxt_state(cur_s, action)
+                cur_a = self.choose_action(cur_s)
+                nxt_s = self.get_nxt_state(cur_s, cur_a)
                 nxt_q_vals = []
                 for a in range(self.a_spc[nxt_s]):
                     if tuple([nxt_s, a]) not in self.q_table:
                         self.q_table[tuple([nxt_s, a])] = 0
                     nxt_q_vals.append(self.q_table[tuple([nxt_s, a])])
-                cur_k = tuple([cur_s, action])
+                cur_k = tuple([cur_s, cur_a])
                 if cur_k in self.q_table:
-                    self.q_table[cur_k] = (1 - self.learning_rate) * self.q_table[cur_k] + self.learning_rate * (self.r_spc[cur_s][action] + self.discount_factor * np.max(nxt_q_vals))
+                    self.q_table[cur_k] = (1 - self.learning_rate) * self.q_table[cur_k] + self.learning_rate * (self.r_spc[cur_s][cur_a] + self.discount_factor * np.max(nxt_q_vals))
                 else:
-                    self.q_table[cur_k] = self.learning_rate * (self.r_spc[cur_s][action] + self.discount_factor * np.max(nxt_q_vals))
+                    self.q_table[cur_k] = self.learning_rate * (self.r_spc[cur_s][cur_a] + self.discount_factor * np.max(nxt_q_vals))
 
                 cur_s = nxt_s
                 cur_step += 1
