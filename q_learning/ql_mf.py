@@ -12,6 +12,7 @@ class q_learning_model_free:
         """
         self.env = gym.make(env_name)
         self.q_table = {}
+        
         self.num_s = num_s
         self.run_iter = 10000
         self.max_steps = 200
